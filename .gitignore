@@ -20,3 +20,4 @@ __pycache__/
 data/hardware_report.json
 data/diagnostics_history.json
 data/event_log_report.json
+data/monitoring_history.json
