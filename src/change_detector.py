@@ -4,7 +4,7 @@ from pathlib import Path
 
 # ==========================================
 # AI Hardware Support Agent
-# Change Detector v0.2
+# Change Detector v0.3
 # ==========================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +41,39 @@ def compare_value(changes, component, previous, current):
             "current": current
         })
 
+def compare_hardware_list(changes, component, previous_items, current_items, key):
+    """Detecta hardware agregado o eliminado."""
+
+    previous_names = {
+        item.get(key)
+        for item in previous_items
+        if item.get(key)
+    }
+
+    current_names = {
+        item.get(key)
+        for item in current_items
+        if item.get(key)
+    }
+
+    added = current_names - previous_names
+    removed = previous_names - current_names
+
+    for name in sorted(added):
+        changes.append({
+            "component": component,
+            "type": "HARDWARE_ADDED",
+            "previous": None,
+            "current": name
+        })
+
+    for name in sorted(removed):
+        changes.append({
+            "component": component,
+            "type": "HARDWARE_REMOVED",
+            "previous": name,
+            "current": None
+        })
 
 def compare_hardware(previous, current):
     """Compara los principales componentes del hardware."""
@@ -112,24 +145,17 @@ def compare_hardware(previous, current):
         current_bios.get("Version")
     )
 
-        # GPU
+    # GPU
     previous_gpus = previous.get("GPU", [])
     current_gpus = current.get("GPU", [])
 
-    previous_gpu_names = [
-        gpu.get("Name") for gpu in previous_gpus
-    ]
-
-    current_gpu_names = [
-        gpu.get("Name") for gpu in current_gpus
-    ]
-
-    if previous_gpu_names != current_gpu_names:
-        changes.append({
-            "component": "GPU",
-            "previous": previous_gpu_names,
-            "current": current_gpu_names
-        })
+    compare_hardware_list(
+        changes,
+        "GPU",
+        previous_gpus,
+        current_gpus,
+        "Name"
+    )
 
     # Comparar versiones de drivers
     compare_gpu_drivers(
@@ -142,20 +168,13 @@ def compare_hardware(previous, current):
     previous_disks = previous.get("Disks", [])
     current_disks = current.get("Disks", [])
 
-    previous_disk_names = [
-        disk.get("Model") for disk in previous_disks
-    ]
-
-    current_disk_names = [
-        disk.get("Model") for disk in current_disks
-    ]
-
-    if previous_disk_names != current_disk_names:
-        changes.append({
-            "component": "Discos",
-            "previous": previous_disk_names,
-            "current": current_disk_names
-        })
+    compare_hardware_list(
+        changes,
+        "Disco",
+        previous_disks,
+        current_disks,
+        "Model"
+    )
 
     return changes
 
@@ -194,7 +213,7 @@ def main():
     print("")
     print("==========================================")
     print(" AI HARDWARE SUPPORT AGENT")
-    print(" Change Detector v0.2")
+    print(" Change Detector v0.3")
     print("==========================================")
     print("")
 
