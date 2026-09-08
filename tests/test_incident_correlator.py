@@ -1,5 +1,7 @@
-from src.incident_correlator import correlate_events
-
+from src.incident_correlator import (
+    calculate_incident_confidence,
+    correlate_events,
+)
 
 def test_correlate_kernel_boot_and_power():
 
@@ -92,6 +94,23 @@ def test_events_outside_correlation_window():
 
     assert len(incidents) == 0
 
+def test_incident_confidence():
+    confidence = calculate_incident_confidence(
+        time_difference_seconds=4
+    )
+
+    assert confidence == 80
+
+
+def test_incident_confidence_with_hardware_evidence():
+    confidence = calculate_incident_confidence(
+        time_difference_seconds=4,
+        whea_count=1,
+        disk_count=1,
+        ntfs_count=1
+    )
+
+    assert confidence == 100
 
 if __name__ == "__main__":
 

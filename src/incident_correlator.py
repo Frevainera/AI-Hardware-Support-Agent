@@ -22,6 +22,33 @@ def build_event_summary(event):
         "message": event.get("Message", "")
     }
 
+def calculate_incident_confidence(
+    time_difference_seconds,
+    whea_count=0,
+    disk_count=0,
+    ntfs_count=0
+):
+    """Calcula la confianza del diagnóstico de reinicio inesperado."""
+
+    confidence = 60
+
+    # Correlación temporal fuerte
+    if time_difference_seconds <= 5:
+        confidence += 20
+    elif time_difference_seconds <= 10:
+        confidence += 10
+
+    # Evidencia adicional
+    if whea_count > 0:
+        confidence += 10
+
+    if disk_count > 0:
+        confidence += 5
+
+    if ntfs_count > 0:
+        confidence += 5
+
+    return min(confidence, 100)
 
 def correlate_events(events):
     """Correlaciona eventos relacionados temporalmente."""
@@ -62,6 +89,9 @@ def correlate_events(events):
                 incidents.append({
                     "type": "UNEXPECTED_RESTART",
                     "severity": "HIGH",
+                    "confidence": calculate_incident_confidence(
+                        time_difference
+                    ),
 
                     "events": [
                         build_event_summary(boot_event),

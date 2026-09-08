@@ -97,6 +97,8 @@ def test_unexpected_restarts():
 
     assert len(incidents) == 2
 
+    assert "Confianza: 80%" in incidents[0]["evidence"]
+    assert "Confianza: 80%" in incidents[1]["evidence"]
     assert len(kernel_power) == 0
     assert len(kernel_boot) == 0
 

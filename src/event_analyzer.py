@@ -244,8 +244,11 @@ def analyze_incidents(report, diagnostics):
                 f"({event['time']})"
             )
 
+        confidence = incident.get("confidence", 0)
+
         evidence = (
             f"Incidente {incident['type']} | "
+            f"Confianza: {confidence}% | "
             f"Diferencia temporal: "
             f"{incident['time_difference_seconds']} segundos | "
             f"Eventos: "

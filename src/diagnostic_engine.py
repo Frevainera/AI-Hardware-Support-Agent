@@ -10,6 +10,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPORT_PATH = BASE_DIR / "data" / "hardware_report.json"
 EVENT_LOG_PATH = BASE_DIR / "data" / "event_log_report.json"
+MONITORING_PATH = BASE_DIR / "data" / "monitoring_history.json"
 
 def load_hardware_report():
     """Carga el informe generado por PowerShell."""
@@ -312,11 +313,19 @@ def analyze_event_log(event_report, diagnostics):
                     "y correlacionar el evento con los reinicios detectados."
                 )
 
+            elif component == "Incident-Correlator":
+                recommendation = (
+                     "Investigar la causa del reinicio inesperado. "
+                    "Correlacionar Kernel-Boot 29 y Kernel-Power 41 "
+                    "con eventos WHEA, BSOD, almacenamiento y alimentación. "
+                    "No asumir una falla de hardware sin evidencia adicional."
+            )
+
             else:
                 recommendation = (
-                    "Revisar los eventos asociados y buscar "
-                    "correlaciones adicionales."
-                )
+                "Revisar los eventos asociados y buscar "
+                "correlaciones adicionales."
+        )
 
         else:
 
@@ -335,6 +344,54 @@ def analyze_event_log(event_report, diagnostics):
             }.get(severity, "BAJA"),
             explanation,
             recommendation
+            )
+
+def analyze_monitoring(diagnostics):
+    """Integra el análisis histórico de CPU y RAM."""
+
+    if not MONITORING_PATH.exists():
+        return
+
+    from src.monitoring_analyzer import (
+        load_monitoring_history,
+        calculate_statistics,
+        analyze_trends,
+        generate_diagnostics
+    )
+
+    history = load_monitoring_history()
+
+    if not history:
+        return
+
+    statistics = calculate_statistics(history)
+    trends = analyze_trends(history)
+
+    monitoring_diagnostics = generate_diagnostics(
+        statistics,
+        trends
+    )
+
+    for monitoring in monitoring_diagnostics:
+
+        status = monitoring.get("status", "NORMAL")
+        severity = monitoring.get("severity", "LOW")
+        component = monitoring.get("component", "Monitoring")
+        message = monitoring.get("message", "")
+        evidence = monitoring.get("evidence", "")
+
+        add_diagnostic(
+            diagnostics,
+            status,
+            component,
+            evidence,
+            {
+                "HIGH": "ALTA",
+                "MEDIUM": "MEDIA",
+                "LOW": "BAJA"
+            }.get(severity, "BAJA"),
+            message,
+            "Continuar monitoreando el comportamiento del sistema y verificar si la tendencia persiste."
         )
 
 def save_diagnostics_history(data, diagnostics, overall_status):
@@ -369,6 +426,7 @@ def save_diagnostics_history(data, diagnostics, overall_status):
         json.dump(history, file, indent=4, ensure_ascii=False)
 
     return history_path
+
 def calculate_overall_status(diagnostics):
     """Calcula el estado general del equipo."""
 
@@ -418,6 +476,8 @@ def run_diagnostics(data):
 
     event_report = load_event_report()
     analyze_event_log(event_report, diagnostics)
+
+    analyze_monitoring(diagnostics)
 
     return diagnostics
 
