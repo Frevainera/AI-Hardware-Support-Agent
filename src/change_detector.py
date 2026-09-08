@@ -41,6 +41,57 @@ def compare_value(changes, component, previous, current):
             "current": current
         })
 
+def classify_change_severity(change):
+    """Clasifica la severidad de un cambio detectado."""
+
+    component = change.get("component")
+    change_type = change.get("type")
+
+    # Cambios de driver
+    if change_type == "DRIVER_CHANGE":
+        return "LOW"
+
+    # Hardware agregado
+    if change_type == "HARDWARE_ADDED":
+
+        if component == "GPU":
+            return "MEDIUM"
+
+        if component == "Disco":
+            return "MEDIUM"
+
+        return "MEDIUM"
+
+    # Hardware eliminado
+    if change_type == "HARDWARE_REMOVED":
+
+        if component == "GPU":
+            return "HIGH"
+
+        if component == "Disco":
+            return "HIGH"
+
+        return "HIGH"
+
+    # Cambios críticos de hardware
+    if component == "CPU - Modelo":
+        return "HIGH"
+
+    if component == "Motherboard - Fabricante":
+        return "HIGH"
+
+    if component == "Motherboard - Modelo":
+        return "HIGH"
+
+    if component == "BIOS - Versión":
+        return "HIGH"
+
+    # Cambios de RAM
+    if component == "RAM":
+        return "MEDIUM"
+
+    return "LOW"
+
 def compare_hardware_list(changes, component, previous_items, current_items, key):
     """Detecta hardware agregado o eliminado."""
 
@@ -272,8 +323,13 @@ def main():
 
     for change in changes:
 
+        severity = classify_change_severity(change)
+
+        change["severity"] = severity
+
         print(f"Componente: {change['component']}")
         print(f"Tipo:       {change.get('type', 'HARDWARE_CHANGE')}")
+        print(f"Severidad:  {severity}")
         print(f"Anterior:   {change['previous']}")
         print(f"Actual:     {change['current']}")
         print("-" * 50)
