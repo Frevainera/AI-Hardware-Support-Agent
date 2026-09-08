@@ -1,0 +1,21 @@
+# Entorno virtual
+.venv/
+
+# Caché de Python
+__pycache__/
+*.py[cod]
+
+# Archivos temporales
+*.tmp
+*.log
+
+# Configuración local de VS Code
+.vscode/
+
+# Variables de entorno / secretos
+.env
+.env.*
+
+# Datos generados localmente
+data/hardware_report.json
+data/diagnostics_history.json
