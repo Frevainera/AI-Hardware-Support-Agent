@@ -233,16 +233,31 @@ def analyze_incidents(report, diagnostics):
 
     for incident in incidents:
 
+        event_summaries = incident.get("events", [])
+
+        evidence_parts = []
+
+        for event in event_summaries:
+            evidence_parts.append(
+                f"{event['provider']} "
+                f"ID {event['event_id']} "
+                f"({event['time']})"
+            )
+
+        evidence = (
+            f"Incidente {incident['type']} | "
+            f"Diferencia temporal: "
+            f"{incident['time_difference_seconds']} segundos | "
+            f"Eventos: "
+            f"{' -> '.join(evidence_parts)}"
+        )
+
         diagnostics.append({
             "component": "Incident-Correlator",
             "status": "WARNING",
             "severity": incident["severity"],
             "message": incident["explanation"],
-            "evidence": (
-                f"Incidente {incident['type']} | "
-                f"Diferencia temporal: "
-                f"{incident['time_difference_seconds']} segundos"
-            )
+            "evidence": evidence
         })
 
 def analyze_events(report):
