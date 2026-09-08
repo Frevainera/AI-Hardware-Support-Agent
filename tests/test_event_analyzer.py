@@ -1,0 +1,109 @@
+from src.event_analyzer import (
+    analyze_events,
+    classify_event_severity
+)
+
+
+def test_severity_classification():
+
+    assert classify_event_severity("Kernel-Power") == "HIGH"
+    assert classify_event_severity("Kernel-Boot") == "MEDIUM"
+    assert classify_event_severity("WHEA") == "HIGH"
+    assert classify_event_severity("Disk") == "HIGH"
+    assert classify_event_severity("Ntfs") == "MEDIUM"
+
+
+def test_no_hardware_errors():
+
+    report = {
+        "EventCounts": {
+            "KernelPower41": 0,
+            "KernelBoot29": 0,
+            "WHEA": 0,
+            "Disk": 0,
+            "Ntfs": 0
+        }
+    }
+
+    diagnostics = analyze_events(report)
+
+    assert len(diagnostics) == 5
+
+    for diagnostic in diagnostics:
+        assert diagnostic["status"] == "NORMAL"
+
+
+def test_unexpected_restarts():
+
+    report = {
+        "EventCounts": {
+            "KernelPower41": 2,
+            "KernelBoot29": 0,
+            "WHEA": 0,
+            "Disk": 0,
+            "Ntfs": 0
+        }
+    }
+
+    diagnostics = analyze_events(report)
+
+    kernel_power = next(
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Kernel-Power"
+    )
+
+    assert kernel_power["status"] == "WARNING"
+    assert kernel_power["severity"] == "HIGH"
+
+
+def test_hardware_events():
+
+    report = {
+        "EventCounts": {
+            "KernelPower41": 0,
+            "KernelBoot29": 0,
+            "WHEA": 1,
+            "Disk": 1,
+            "Ntfs": 1
+        }
+    }
+
+    diagnostics = analyze_events(report)
+
+    whea = next(
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "WHEA"
+    )
+
+    disk = next(
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Disk"
+    )
+
+    ntfs = next(
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Ntfs"
+    )
+
+    assert whea["severity"] == "HIGH"
+    assert disk["severity"] == "HIGH"
+    assert ntfs["severity"] == "MEDIUM"
+
+
+if __name__ == "__main__":
+
+    test_severity_classification()
+    test_no_hardware_errors()
+    test_unexpected_restarts()
+    test_hardware_events()
+
+    print("")
+    print("==========================================")
+    print(" EVENT ANALYZER TESTS")
+    print("==========================================")
+    print("")
+    print("TODOS LOS TESTS OK")

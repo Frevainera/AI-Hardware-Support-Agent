@@ -9,14 +9,30 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 REPORT_PATH = BASE_DIR / "data" / "hardware_report.json"
-
+EVENT_LOG_PATH = BASE_DIR / "data" / "event_log_report.json"
 
 def load_hardware_report():
     """Carga el informe generado por PowerShell."""
 
     with open(REPORT_PATH, "r", encoding="utf-8-sig") as file:
         return json.load(file)
+    
+def load_event_report():
+    """Carga el informe de eventos de Windows."""
 
+    if not EVENT_LOG_PATH.exists():
+        return {}
+
+    try:
+        with open(
+            EVENT_LOG_PATH,
+            "r",
+            encoding="utf-8-sig"
+        ) as file:
+            return json.load(file)
+
+    except (json.JSONDecodeError, OSError):
+        return {}
 
 def add_diagnostic(diagnostics, status, problem, evidence, severity, explanation, recommendation):
     """Agrega un diagnóstico al resultado."""
@@ -260,6 +276,67 @@ def analyze_disks(data, diagnostics):
             "No se requiere ninguna acción."
         )
 
+def analyze_event_log(event_report, diagnostics):
+    """Integra los diagnósticos del Event Analyzer."""
+
+    if not event_report:
+        return
+
+    from src.event_analyzer import analyze_events
+
+    event_diagnostics = analyze_events(event_report)
+
+    for event in event_diagnostics:
+
+        status = event.get("status", "NORMAL")
+        severity = event.get("severity", "LOW")
+        component = event.get("component", "Evento")
+        message = event.get("message", "")
+        evidence = event.get("evidence", "")
+
+        if status == "WARNING":
+
+            explanation = message
+
+            if component == "Kernel-Power":
+                recommendation = (
+                    "Investigar reinicios inesperados y correlacionar "
+                    "con eventos WHEA, BSOD, alimentación y estabilidad "
+                    "del sistema. No asumir una falla de hardware sin "
+                    "evidencia adicional."
+                )
+
+            elif component == "Kernel-Boot":
+                recommendation = (
+                    "Revisar el funcionamiento de Windows Fast Startup "
+                    "y correlacionar el evento con los reinicios detectados."
+                )
+
+            else:
+                recommendation = (
+                    "Revisar los eventos asociados y buscar "
+                    "correlaciones adicionales."
+                )
+
+        else:
+
+            explanation = message
+            recommendation = "No se requiere ninguna acción."
+
+        add_diagnostic(
+            diagnostics,
+            status,
+            component,
+            evidence,
+            {
+                "HIGH": "ALTA",
+                "MEDIUM": "MEDIA",
+                "LOW": "BAJA"
+            }.get(severity, "BAJA"),
+            explanation,
+            recommendation
+        )
+
 def save_diagnostics_history(data, diagnostics, overall_status):
     """Guarda un snapshot completo del sistema y sus diagnósticos."""
 
@@ -338,6 +415,9 @@ def run_diagnostics(data):
     analyze_ram(data, diagnostics)
     analyze_gpu(data, diagnostics)
     analyze_disks(data, diagnostics)
+
+    event_report = load_event_report()
+    analyze_event_log(event_report, diagnostics)
 
     return diagnostics
 
