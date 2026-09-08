@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from src.incident_correlator import correlate_events
 
 # ==========================================
 # AI Hardware Support Agent
@@ -220,33 +221,96 @@ def analyze_ntfs(report, diagnostics):
             "Ntfs: 0 eventos."
         )
 
+def analyze_incidents(report, diagnostics):
+    """Analiza y agrega incidentes correlacionados."""
+
+    events = report.get("RelevantEvents", [])
+
+    if not events:
+        return
+
+    incidents = correlate_events(events)
+
+    for incident in incidents:
+
+        diagnostics.append({
+            "component": "Incident-Correlator",
+            "status": "WARNING",
+            "severity": incident["severity"],
+            "message": incident["explanation"],
+            "evidence": (
+                f"Incidente {incident['type']} | "
+                f"Diferencia temporal: "
+                f"{incident['time_difference_seconds']} segundos"
+            )
+        })
 
 def analyze_events(report):
     """Ejecuta todos los análisis de eventos."""
 
     diagnostics = []
 
-    analyze_kernel_power(
-        report,
-        diagnostics
-    )
+    # ------------------------------------------
+    # Correlación de incidentes
+    # ------------------------------------------
 
-    analyze_kernel_boot(
-        report,
-        diagnostics
-    )
+    events = report.get("RelevantEvents", [])
+    incidents = correlate_events(events)
 
-    analyze_whea(
-        report,
-        diagnostics
-    )
+    # ------------------------------------------
+    # Kernel-Power / Kernel-Boot
+    # ------------------------------------------
+    # Si forman parte de un incidente correlacionado,
+    # no se generan diagnósticos individuales para evitar
+    # contabilizar dos veces el mismo problema.
 
-    analyze_disk(
-        report,
-        diagnostics
-    )
+    if incidents:
+        analyze_whea(
+            report,
+            diagnostics
+        )
 
-    analyze_ntfs(
+        analyze_disk(
+            report,
+            diagnostics
+        )
+
+        analyze_ntfs(
+            report,
+            diagnostics
+        )
+
+    else:
+        analyze_kernel_power(
+            report,
+            diagnostics
+        )
+
+        analyze_kernel_boot(
+            report,
+            diagnostics
+        )
+
+        analyze_whea(
+            report,
+            diagnostics
+        )
+
+        analyze_disk(
+            report,
+            diagnostics
+        )
+
+        analyze_ntfs(
+            report,
+            diagnostics
+        )
+
+    # ------------------------------------------
+    # Agregar incidentes correlacionados
+    # ------------------------------------------
+
+    analyze_incidents(
         report,
         diagnostics
     )

@@ -38,23 +38,67 @@ def test_unexpected_restarts():
     report = {
         "EventCounts": {
             "KernelPower41": 2,
-            "KernelBoot29": 0,
+            "KernelBoot29": 2,
             "WHEA": 0,
             "Disk": 0,
             "Ntfs": 0
-        }
+        },
+        "RelevantEvents": [
+            {
+                "TimeCreated": "2026-09-05 11:17:01",
+                "Id": 29,
+                "Provider": "Microsoft-Windows-Kernel-Boot",
+                "Level": "Error",
+                "Message": "Fast Startup error"
+            },
+            {
+                "TimeCreated": "2026-09-05 11:17:05",
+                "Id": 41,
+                "Provider": "Microsoft-Windows-Kernel-Power",
+                "Level": "Critical",
+                "Message": "Unexpected restart"
+            },
+            {
+                "TimeCreated": "2026-09-04 05:53:08",
+                "Id": 29,
+                "Provider": "Microsoft-Windows-Kernel-Boot",
+                "Level": "Error",
+                "Message": "Fast Startup error"
+            },
+            {
+                "TimeCreated": "2026-09-04 05:53:11",
+                "Id": 41,
+                "Provider": "Microsoft-Windows-Kernel-Power",
+                "Level": "Critical",
+                "Message": "Unexpected restart"
+            }
+        ]
     }
 
     diagnostics = analyze_events(report)
 
-    kernel_power = next(
+    incidents = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Incident-Correlator"
+    ]
+
+    kernel_power = [
         diagnostic
         for diagnostic in diagnostics
         if diagnostic["component"] == "Kernel-Power"
-    )
+    ]
 
-    assert kernel_power["status"] == "WARNING"
-    assert kernel_power["severity"] == "HIGH"
+    kernel_boot = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Kernel-Boot"
+    ]
+
+    assert len(incidents) == 2
+
+    assert len(kernel_power) == 0
+    assert len(kernel_boot) == 0
 
 
 def test_hardware_events():
