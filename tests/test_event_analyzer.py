@@ -99,6 +99,26 @@ def test_unexpected_restarts():
 
     assert "Confianza: 80%" in incidents[0]["evidence"]
     assert "Confianza: 80%" in incidents[1]["evidence"]
+    
+    classifiers = [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["component"] == "Incident-Classifier"
+    ]
+
+    assert len(classifiers) == 2
+
+    assert classifiers[0]["message"] == (
+        "Posible causa: CAUSE_NOT_DETERMINED"
+    )
+
+    assert classifiers[1]["message"] == (
+        "Posible causa: CAUSE_NOT_DETERMINED"
+    )
+
+    assert "Confianza: 40%" in classifiers[0]["evidence"]
+    assert "Confianza: 40%" in classifiers[1]["evidence"]
+
     assert len(kernel_power) == 0
     assert len(kernel_boot) == 0
 

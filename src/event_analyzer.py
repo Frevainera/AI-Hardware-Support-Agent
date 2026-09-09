@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from src.incident_correlator import correlate_events
+from src.incident_classifier import classify_incident
 
 # ==========================================
 # AI Hardware Support Agent
@@ -222,7 +223,7 @@ def analyze_ntfs(report, diagnostics):
         )
 
 def analyze_incidents(report, diagnostics):
-    """Analiza y agrega incidentes correlacionados."""
+    """Analiza incidentes correlacionados y sus posibles causas."""
 
     events = report.get("RelevantEvents", [])
 
@@ -230,6 +231,11 @@ def analyze_incidents(report, diagnostics):
         return
 
     incidents = correlate_events(events)
+
+    event_counts = report.get(
+        "EventCounts",
+        {}
+    )
 
     for incident in incidents:
 
@@ -262,6 +268,29 @@ def analyze_incidents(report, diagnostics):
             "message": incident["explanation"],
             "evidence": evidence
         })
+
+        # ------------------------------------------
+        # Clasificación de posibles causas
+        # ------------------------------------------
+
+        classifications = classify_incident(incident)
+
+        for classification in classifications:
+
+            diagnostics.append({
+                "component": "Incident-Classifier",
+                "status": "WARNING",
+                "severity": "MEDIUM",
+                "message": (
+                    f"Posible causa: "
+                    f"{classification['cause']}"
+                ),
+                "evidence": (
+                    f"Confianza: "
+                    f"{classification['confidence']}% | "
+                    f"{classification['evidence']}"
+                )
+            })
 
 def analyze_events(report):
     """Ejecuta todos los análisis de eventos."""
