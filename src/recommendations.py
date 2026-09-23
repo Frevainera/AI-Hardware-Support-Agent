@@ -8,6 +8,10 @@ def generate_recommendations(
     """
     Genera recomendaciones técnicas a partir de los
     hallazgos y correlaciones detectados.
+
+    Cuando existe una correlación térmica de GPU,
+    consolida las recomendaciones térmicas individuales
+    en una única recomendación.
     """
 
     recommendations = []
@@ -17,6 +21,12 @@ def generate_recommendations(
 
     latest_result = results[-1]
     findings = latest_result.get("findings", [])
+
+    # Determina si existe una correlación térmica de GPU.
+    gpu_thermal_correlation = any(
+        correlation.get("type") == "GPU_THERMAL"
+        for correlation in correlations
+    )
 
     checked = set()
 
@@ -32,6 +42,7 @@ def generate_recommendations(
 
         checked.add(key)
 
+        # CPU
         if component == "CPU" and metric == "temperatura":
 
             recommendations.append({
@@ -48,7 +59,12 @@ def generate_recommendations(
                 ],
             })
 
-        elif component == "GPU" and metric == "temperatura":
+        # GPU - temperatura individual
+        elif (
+            component == "GPU"
+            and metric == "temperatura"
+            and not gpu_thermal_correlation
+        ):
 
             recommendations.append({
                 "component": "GPU",
@@ -64,7 +80,12 @@ def generate_recommendations(
                 ],
             })
 
-        elif component == "GPU" and metric == "Hot Spot":
+        # GPU - Hot Spot individual
+        elif (
+            component == "GPU"
+            and metric == "Hot Spot"
+            and not gpu_thermal_correlation
+        ):
 
             recommendations.append({
                 "component": "GPU",
@@ -80,9 +101,11 @@ def generate_recommendations(
                 ],
             })
 
+        # GPU - temperatura de memoria individual
         elif (
             component == "GPU"
             and metric == "temperatura de memoria"
+            and not gpu_thermal_correlation
         ):
 
             recommendations.append({
@@ -99,6 +122,7 @@ def generate_recommendations(
                 ],
             })
 
+        # RAM
         elif component == "RAM" and metric == "uso":
 
             recommendations.append({
@@ -115,6 +139,7 @@ def generate_recommendations(
                 ],
             })
 
+        # VRAM - uso
         elif component == "VRAM" and metric == "uso":
 
             recommendations.append({
@@ -131,6 +156,7 @@ def generate_recommendations(
                 ],
             })
 
+        # Disco
         elif (
             component == "Disco"
             and metric == "espacio utilizado"
@@ -150,7 +176,7 @@ def generate_recommendations(
                 ],
             })
 
-    # Recomendaciones derivadas de correlaciones
+    # Recomendación térmica consolidada de GPU
     for correlation in correlations:
 
         if correlation.get("type") == "GPU_THERMAL":
@@ -159,13 +185,15 @@ def generate_recommendations(
                 "component": "GPU",
                 "priority": correlation.get("severity"),
                 "cause": (
-                    "Comportamiento térmico anómalo "
+                    "Comportamiento térmico anómalo de la GPU "
                     "durante carga elevada."
                 ),
                 "actions": [
-                    "Verificar refrigeración de la GPU.",
-                    "Comprobar ventiladores y flujo de aire.",
-                    "Limpiar disipador y gabinete.",
+                    "Verificar temperatura de GPU, Hot Spot y memoria.",
+                    "Verificar ventiladores y flujo de aire del gabinete.",
+                    "Limpiar disipador y sistema de refrigeración.",
+                    "Comparar temperatura del núcleo con el Hot Spot.",
+                    "Revisar pasta térmica y pads térmicos si corresponde.",
                     "Realizar una prueba bajo carga controlada.",
                 ],
             })

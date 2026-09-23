@@ -126,6 +126,7 @@ def analyze_sample(sample):
 
     cpu = sample.get("cpu", {})
     gpu = sample.get("gpu", {})
+    storage = sample.get("storage", {})
     disk = sample.get("disk", {})
 
     # CPU temperature
@@ -209,6 +210,30 @@ def analyze_sample(sample):
         THRESHOLDS["disk_critical"],
         "Disco",
         "espacio utilizado"
+    )
+
+    if finding:
+        findings.append(finding)
+
+    # SSD temperature
+    finding = check_temperature(
+        storage.get("ssd", {}).get("temperature_c"),
+        THRESHOLDS["ssd_temperature_warning"],
+        THRESHOLDS["ssd_temperature_critical"],
+        "SSD",
+        "temperatura"
+    )
+
+    if finding:
+        findings.append(finding)
+
+    # HDD temperature
+    finding = check_temperature(
+        storage.get("hdd", {}).get("temperature_c"),
+        THRESHOLDS["hdd_temperature_warning"],
+        THRESHOLDS["hdd_temperature_critical"],
+        "HDD",
+        "temperatura"
     )
 
     if finding:

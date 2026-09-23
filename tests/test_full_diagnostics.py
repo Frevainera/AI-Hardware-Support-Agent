@@ -102,9 +102,9 @@ def main():
         correlations
     )
 
-    assert len(recommendations) == 8
+    assert len(recommendations) == 5
 
-    print("OK: 8 recomendaciones generadas.")
+    print("OK: 5 recomendaciones generadas.")
 
     components = [
         recommendation["component"]
@@ -115,6 +115,28 @@ def main():
     assert "GPU" in components
     assert "RAM" in components
     assert "Disco" in components
+
+    gpu_recommendations = [
+        recommendation
+        for recommendation in recommendations
+        if recommendation["component"] == "GPU"
+    ]
+
+    assert len(gpu_recommendations) == 2
+
+    thermal_recommendation = next(
+        recommendation
+        for recommendation in gpu_recommendations
+        if "térmico" in recommendation["cause"]
+    )
+
+    assert thermal_recommendation["priority"] == "WARNING"
+
+    assert len(
+        thermal_recommendation["actions"]
+    ) == 6
+
+    print("OK: recomendación térmica de GPU consolidada.")
 
     for recommendation in recommendations:
         assert recommendation.get("cause")

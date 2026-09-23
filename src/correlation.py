@@ -8,8 +8,15 @@ def analyze_gpu_thermal_behavior(
 ) -> List[Dict[str, Any]]:
     """
     Detecta un posible problema térmico de GPU cuando
-    existe alta carga y temperatura elevada durante
+    existe carga elevada y temperatura elevada durante
     varias muestras consecutivas.
+
+    La correlación considera:
+
+    - Carga de GPU
+    - Temperatura del núcleo
+    - Hot Spot
+    - Temperatura de memoria
     """
 
     if not results:
@@ -25,16 +32,37 @@ def analyze_gpu_thermal_behavior(
         gpu_load = gpu.get("load_percent")
         gpu_temperature = gpu.get("temperature_c")
         gpu_hotspot = gpu.get("hotspot_temperature_c")
+        gpu_memory_temperature = gpu.get(
+            "memory_temperature_c"
+        )
+
+        thermal_problem = (
+            (
+                gpu_temperature is not None
+                and gpu_temperature >= THRESHOLDS[
+                    "gpu_temperature_warning"
+                ]
+            )
+            or
+            (
+                gpu_hotspot is not None
+                and gpu_hotspot >= THRESHOLDS[
+                    "gpu_hotspot_warning"
+                ]
+            )
+            or
+            (
+                gpu_memory_temperature is not None
+                and gpu_memory_temperature >= THRESHOLDS[
+                    "gpu_memory_temperature_warning"
+                ]
+            )
+        )
 
         if (
             gpu_load is not None
-            and gpu_temperature is not None
-            and gpu_hotspot is not None
             and gpu_load >= THRESHOLDS["gpu_load_correlation"]
-            and (
-                gpu_temperature >= THRESHOLDS["gpu_temperature_warning"]
-                or gpu_hotspot >= THRESHOLDS["gpu_hotspot_warning"]
-            )
+            and thermal_problem
         ):
             consecutive += 1
 
@@ -58,10 +86,13 @@ def analyze_gpu_thermal_behavior(
             "gpu_hotspot_temperature_c": gpu.get(
                 "hotspot_temperature_c"
             ),
+            "gpu_memory_temperature_c": gpu.get(
+                "memory_temperature_c"
+            ),
             "message": (
                 "Posible problema térmico de GPU: "
-                "carga elevada y temperatura alta "
-                "detectadas de forma persistente."
+                "carga elevada y comportamiento térmico "
+                "anómalo detectados de forma persistente."
             ),
         }
     ]

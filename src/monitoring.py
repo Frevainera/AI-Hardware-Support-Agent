@@ -5,7 +5,7 @@ from pathlib import Path
 
 import psutil
 
-from sensors import get_hardware_sensors
+from .sensors import get_hardware_sensors
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -77,6 +77,7 @@ def collect_metrics():
             "vram_total_mb": hardware["gpu"]["vram_total_mb"],
         },
 
+        "storage": hardware["storage"],
         "disk": get_disk_metrics(),
     }
 

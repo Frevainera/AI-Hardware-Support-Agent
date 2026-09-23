@@ -23,4 +23,10 @@ THRESHOLDS = {
     "persistent_samples": 3,
 
     "gpu_load_correlation": 90,
+
+    "ssd_temperature_warning": 60,
+    "ssd_temperature_critical": 70,
+
+    "hdd_temperature_warning": 50,
+    "hdd_temperature_critical": 55,
 }

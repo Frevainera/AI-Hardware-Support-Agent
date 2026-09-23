@@ -84,11 +84,52 @@ def get_core_clocks(data):
 
     return clocks
 
+def get_storage_sensors(data):
+    """Obtiene temperaturas y uso de SSD y HDD."""
+
+    storage = {
+        "ssd": {
+            "temperature_c": parse_value(
+                find_sensor(
+                    data,
+                    "/ssd/1/temperature/0"
+                )
+            ),
+
+            "usage_percent": parse_value(
+                find_sensor(
+                    data,
+                    "/ssd/1/load/30"
+                )
+            ),
+        },
+
+        "hdd": {
+            "temperature_c": parse_value(
+                find_sensor(
+                    data,
+                    "/hdd/0/temperature/0"
+                )
+            ),
+
+            "usage_percent": parse_value(
+                find_sensor(
+                    data,
+                    "/hdd/0/load/30"
+                )
+            ),
+        },
+    }
+
+    return storage
+
 
 def get_hardware_sensors():
     """Obtiene y normaliza las métricas principales de CPU y GPU."""
 
     data = get_sensor_data()
+
+    storage = get_storage_sensors(data)
 
     core_clocks = get_core_clocks(data)
 
@@ -198,6 +239,8 @@ def get_hardware_sensors():
                 )
             ),
         },
+
+        "storage": storage,
     }
 
     return sensors
